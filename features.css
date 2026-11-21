@@ -100,6 +100,20 @@
   .list-key span:first-child { display: none; }
 }
 
+/* Achievements (profile) + double-coin note */
+.ach-card { margin-bottom: 16px; }
+.fastest .seg { margin-bottom: 6px; }
+.ach-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.ach { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: 12px; background: var(--surface-2); border: 1.5px dashed var(--line); }
+.ach.earned { border: 1.5px solid color-mix(in srgb, var(--gold) 70%, var(--line)); background: color-mix(in srgb, var(--gold) 12%, var(--surface)); }
+.ach-icon { font-size: 1.8rem; line-height: 1; filter: grayscale(1); opacity: .6; }
+.ach.earned .ach-icon { filter: none; opacity: 1; }
+.ach b { display: block; }
+.ach span { display: block; font-size: .85rem; color: var(--ink-soft); }
+.ach small { display: block; margin-top: 4px; font-size: .75rem; font-weight: 700; color: var(--ink-soft); }
+.double-note { background: color-mix(in srgb, var(--gold) 14%, var(--surface)); border-radius: 10px; padding: 8px 12px; font-size: .9rem; }
+.ach-unlock b { font-size: 1rem; }
+
 /* Leaderboard (this device) */
 .board-head { display: flex; gap: 16px; align-items: center; }
 .board-av .avatar { width: 90px; height: 117px; }

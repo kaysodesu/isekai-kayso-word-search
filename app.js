@@ -42,7 +42,7 @@
   /* ================= player state ================= */
   function freshState() {
     return { v: 2, done: {}, spent: 0, inv: { spark: 2, spyglass: 0, freeze: 0, buffer: 0, shield: 0 },
-      owned: Avatar.FREE.slice(), look: Avatar.defaultLook(), outfits: [], seen: {}, name: "Seeker" };
+      owned: Avatar.FREE.slice(), look: Avatar.defaultLook(), outfits: [], seen: {}, ach: {}, name: "Seeker" };
   }
   function normalize(s) {
     var d = freshState();
@@ -75,13 +75,28 @@
 
   var VALID = {}; PUZZLES.forEach(function (p) { VALID[p.id] = true; });
   // only count puzzles that still exist (themes were swapped in v2)
-  function earnedStars() { var t = 0; Object.keys(S.done).forEach(function (k) { if (VALID[k]) t += S.done[k].stars || 0; }); return t; }
+  // Coins a solved puzzle is worth: its 1-5 rating, doubled when a 10/15/30-min time goal was beaten.
+  // Older saves have no "coins" field, so they fall back to the rating.
+  function coinsOf(d) { return d ? (d.coins || d.stars || 0) : 0; }
+  function earnedCoins() { var t = 0; Object.keys(S.done).forEach(function (k) { if (VALID[k]) t += coinsOf(S.done[k]); }); return t; }
+
+  // Beat the clock on the long puzzles: double coins + an achievement on your profile
+  var ACHIEVEMENTS = [
+    { key: "10", icon: "🥪", name: "Lunch Break Legend", desc: "Beat a 10-minute puzzle's 10:00 goal" },
+    { key: "15", icon: "⏩", name: "Skip Intro Energy", desc: "Beat a 15-minute puzzle's 15:00 goal" },
+    { key: "30", icon: "🍿", name: "Binge Boss", desc: "Beat a 30-minute puzzle's 30:00 goal" }
+  ];
+  var ACH_BY_TIER = {}; ACHIEVEMENTS.forEach(function (a) { ACH_BY_TIER[a.key] = a; });
+  function achievementFor(tier) { return ACH_BY_TIER[tier.key] || null; }
+  function beatCount(key) { return THEMES.filter(function (th) { var d = S.done[th.id + "-" + key]; return d && d.beat; }).length; }
   function episodeNo(theme) { return THEMES.indexOf(theme) + 1; }
   function themeDone(theme) { return TIERS.every(function (t) { return S.done[theme.id + "-" + t.key]; }); }
   function storiesDone() { return THEMES.filter(themeDone); }
-  function themeStars(theme) { return TIERS.reduce(function (a, t) { var d = S.done[theme.id + "-" + t.key]; return a + (d ? d.stars : 0); }, 0); }
+  function themeCoins(theme) { return TIERS.reduce(function (a, t) { return a + coinsOf(S.done[theme.id + "-" + t.key]); }, 0); }
+  // Most coins a theme can pay: 5 per length, doubled on the lengths with a time-goal bonus
+  var THEME_MAX = TIERS.reduce(function (a, t) { return a + (achievementFor(t) ? 10 : 5); }, 0);
   // Grotto Coins: earned in puzzles + story bonuses, minus spending in the shop and closet.
-  function wallet() { return earnedStars() + storiesDone().length * STORY_BONUS - S.spent; }
+  function wallet() { return earnedCoins() + storiesDone().length * STORY_BONUS - S.spent; }
 
   // Everything is saved in this browser only (localStorage). Nothing is ever sent anywhere.
   function save() { store("sf_state", S); refreshTop(); }
@@ -395,7 +410,8 @@
     app.appendChild($("playTpl").content.cloneNode(true));
     $("pCat").textContent = theme.emoji + " " + STORY.realms[theme.cat];
     $("pTitle").textContent = theme.name;
-    $("pMeta").textContent = puzzle.tier.name + " · about " + puzzle.tier.minutes + " min · line " + (TIERS.indexOf(puzzle.tier) + 1) + " of 5";
+    $("pMeta").textContent = puzzle.tier.name + " · about " + puzzle.tier.minutes + " min · line " + (TIERS.indexOf(puzzle.tier) + 1) + " of 5" +
+      (achievementFor(puzzle.tier) ? " · ⏱️ beat " + puzzle.tier.minutes + ":00 for double coins" : "");
 
     var board = $("board");
     board.style.setProperty("--n", size);
@@ -585,12 +601,22 @@
       finished = true; clearAnchor(); lockTools();
       var stars = rateStars(seconds, puzzle, run);
       var prev = S.done[puzzle.id];
-      var gained = Math.max(0, stars - (prev ? prev.stars : 0));
+      // beat the real clock goal (not the Time Buffer one) on a 10/15/30-min puzzle -> double coins
+      var ach = achievementFor(puzzle.tier), beat = !!ach && seconds <= puzzle.tier.minutes * 60;
+      var runCoins = stars * (beat ? 2 : 1);
+      var gained = Math.max(0, runCoins - coinsOf(prev));
       var wasStory = themeDone(theme);
-      S.done[puzzle.id] = prev ? { s: Math.min(prev.s, seconds), stars: Math.max(prev.stars, stars) } : { s: seconds, stars: stars };
+      S.done[puzzle.id] = {
+        s: prev ? Math.min(prev.s, seconds) : seconds,
+        stars: Math.max(prev ? prev.stars : 0, stars),
+        coins: Math.max(coinsOf(prev), runCoins),
+        beat: !!(beat || (prev && prev.beat))
+      };
+      var newAch = beat && !S.ach[ach.key] ? ach : null;
+      if (newAch) S.ach[ach.key] = Date.now();
       var storyNow = !wasStory && themeDone(theme);
       save();
-      setTimeout(function () { showWin(puzzle, seconds, stars, gained, prev, storyNow); }, 450);
+      setTimeout(function () { showWin(puzzle, seconds, stars, gained, prev, storyNow, beat, newAch); }, 450);
     }
 
     cleanup = function () { clearInterval(tick); clearInterval(pbTimer); clearTimeout(missTimer); };
@@ -643,12 +669,16 @@
     modal.hidden = false;
     var first = act.querySelector(".btn:not(.ghost)"); if (first) first.focus();
   }
-  function showWin(puzzle, seconds, stars, gained, prev, storyNow) {
+  function showWin(puzzle, seconds, stars, gained, prev, storyNow, beat, newAch) {
     var stars5 = "";
     for (var i = 1; i <= 5; i++) stars5 += '<span class="ws' + (i <= stars ? " on" : "") + '" style="animation-delay:' + (i * 0.12) + 's">' + coin(i <= stars) + "</span>";
     var target = puzzle.tier.minutes;
     var text = "Solved in " + fmt(seconds) + " (target about " + target + " min). ";
-    text += gained > 0 ? "+" + gained + " Grotto Coin" + (gained > 1 ? "s" : "") + " added to your pouch!" : prev ? "You already earned " + prev.stars + " coins here. Beat it to earn more." : "";
+    text += gained > 0 ? "+" + gained + " Grotto Coin" + (gained > 1 ? "s" : "") + " added to your pouch!" : prev ? "You already earned " + coinsOf(prev) + " coins here. Beat it to earn more." : "";
+    var extra = "";
+    if (beat) extra += '<div class="reward-box"><b>⏱️ Time goal beaten: double Grotto Coins!</b><span>Under ' + target + ":00 on a " + target + "-minute puzzle.</span></div>";
+    if (newAch) extra += '<div class="entry-box ok ach-unlock"><b>' + newAch.icon + " Achievement unlocked: " + newAch.name + '</b><span>It\'s on your <a href="#/leaderboard">profile</a> now.</span></div>';
+    extra += pageProgress(puzzle.theme);
     var actions = [];
     if (storyNow) actions.push({ label: "📖 Restore the page!", onClick: function () { $("winModal").hidden = true; completeStory(puzzle.theme); } });
     else {
@@ -656,7 +686,7 @@
       actions.push({ label: "Journey", href: "#/journey", ghost: true });
       actions.push({ label: "Next puzzle →", href: "#/play/" + encodeURIComponent(nx.id) });
     }
-    openModal(storyNow ? "Last line found!" : "Puzzle complete!", stars5, text, pageProgress(puzzle.theme), actions);
+    openModal(storyNow ? "Last line found!" : "Puzzle complete!", stars5, text, extra, actions);
   }
   function completeStory(theme) {
     playOutro(theme).then(function () {
@@ -689,7 +719,7 @@
       THEMES.filter(function (t) { return t.cat === cat.key; }).forEach(function (t) {
         var complete = themeDone(t), lines = TIERS.filter(function (tr) { return S.done[t.id + "-" + tr.key]; }).length;
         h += '<article class="stop' + (complete ? " complete" : "") + '">' +
-          '<div class="stop-top"><span class="stop-emoji">' + t.emoji + '</span><div><h3>' + esc(t.name) + '</h3><span class="muted">' + themeStars(t) + "/25 " + COIN + "</span></div>" + (complete ? '<span class="seal" title="Story complete">📜✓</span>' : "") + "</div>" +
+          '<div class="stop-top"><span class="stop-emoji">' + t.emoji + '</span><div><h3>' + esc(t.name) + '</h3><span class="muted">' + themeCoins(t) + "/" + THEME_MAX + " " + COIN + "</span></div>" + (complete ? '<span class="seal" title="Story complete">📜✓</span>' : "") + "</div>" +
           '<div class="pips">' + TIERS.map(function (tr, i) {
             var d = S.done[t.id + "-" + tr.key];
             if (!unlocked(t, i)) return '<span class="locked" title="' + lockedHint(i) + '">' + tr.minutes + "</span>";
@@ -795,12 +825,13 @@
   /* ================= shop ================= */
   function renderShop() {
     document.title = "Grotto Shop · Seek & Find";
-    var earned = earnedStars(), bonus = storiesDone().length * STORY_BONUS;
+    var earned = earnedCoins(), bonus = storiesDone().length * STORY_BONUS;
     var h = '<section class="page-head"><h1>Grotto Shop</h1><p>Spend your Grotto Coins on power-ups, buffers and outfit pieces here, or on emotes, perks and more in our Discord.</p></section>' +
       '<div class="shop-top"><div class="card-box wallet"><div class="wallet-big">' + COIN + " " + wallet() + '</div><span class="muted">Grotto Coins to spend</span>' +
       '<dl><dt>From puzzles</dt><dd>' + earned + "</dd><dt>Story bonuses</dt><dd>" + bonus + "</dd><dt>Spent</dt><dd>−" + S.spent + "</dd></dl></div>" +
       '<div class="card-box how"><h2>How to earn Grotto Coins</h2><ul class="rate-list">' +
       "<li><b>" + starStr(5) + "</b> Finish within the target time</li><li><b>" + starStr(4) + "</b> Within 1.5× the target</li><li><b>" + starStr(3) + "</b> Within 2×</li><li><b>" + starStr(2) + "</b> Within 3×</li><li><b>" + starStr(1) + "</b> Any finish counts!</li></ul>" +
+      '<p class="double-note">⏱️ <b>Double coins:</b> beat the clock (10:00, 15:00 or 30:00) on a 10, 15 or 30-minute puzzle to double its coins, up to 10, and unlock an achievement.</p>' +
       '<p class="muted">Each plain Hint costs 1 coin from that puzzle\'s rating. Replaying a puzzle only adds the coins you improve by. Finishing a story adds +' + STORY_BONUS + " coins.</p></div></div>" +
       '<section><h2 class="sec-title">Power-ups &amp; buffers</h2><div class="shop-grid">' +
       POWERS.map(function (p) {
@@ -826,7 +857,7 @@
     var solved = PUZZLES.filter(function (p) { return S.done[p.id]; });
     var perfect = solved.filter(function (p) { return S.done[p.id].stars === 5; }).length;
     var totalTime = solved.reduce(function (t, p) { return t + S.done[p.id].s; }, 0);
-    var coinsEarned = earnedStars() + storiesDone().length * STORY_BONUS;
+    var coinsEarned = earnedCoins() + storiesDone().length * STORY_BONUS;
     var rows = solved.filter(function (p) { return p.tier.key === boardTier; })
       .sort(function (x, y) { return S.done[x.id].s - S.done[y.id].s; }).slice(0, 10);
     var tier = TIERS.filter(function (t) { return t.key === boardTier; })[0];
@@ -840,7 +871,12 @@
       tile(perfect, "Perfect 5-coin solves") +
       tile(fmt(totalTime), "Total time searching") +
       "</div>" +
-      '<section class="card-box board"><h2>🏆 Fastest solves</h2>' +
+      '<section class="card-box ach-card"><h2>🏅 Achievements</h2><div class="ach-grid">' + ACHIEVEMENTS.map(function (a) {
+        var at = S.ach[a.key], n = beatCount(a.key);
+        return '<div class="ach' + (at ? " earned" : "") + '"><span class="ach-icon">' + (at ? a.icon : "🔒") + '</span><div><b>' + a.name + "</b><span>" + a.desc + " for double coins.</span>" +
+          '<small>' + (at ? "Unlocked " + new Date(at).toLocaleDateString() + " · " : "") + n + "/" + THEMES.length + " goals beaten</small></div></div>";
+      }).join("") + "</div></section>" +
+      '<section class="card-box fastest"><h2>🏆 Fastest solves</h2>' +
       '<div class="seg" role="group" aria-label="Puzzle length">' + TIERS.map(function (t) { return '<button class="seg-btn" data-bt="' + t.key + '" aria-pressed="' + (t.key === boardTier) + '">' + t.minutes + " min</button>"; }).join("") + "</div>" +
       (rows.length
         ? '<ol class="rank-list">' + rows.map(function (p, i) {

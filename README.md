@@ -8,7 +8,9 @@
 
 - **175 puzzles:** 35 themes, each at five lengths: Speedrun (1 min), Coffee Break (5), Lunch Break (10), One Episode (15) and Binge Mode (30). Themes range from anime and manga to 90s throwbacks, Y2K internet, food, travel and the seasons.
 - **The Scattered Storybook:** a short comic plays as you start each theme. Finish all five of its puzzles to restore that page of the story.
+- **Unlock as you go:** in each theme, the 5-minute puzzle unlocks after the 1-minute one, then 10, 15 and 30.
 - **Grotto Coins:** earn 1–5 coins per puzzle, depending on your time, plus a bonus for each finished story. Spend them on power-ups (Spark, Spyglass, Time Freeze), buffers (Time Buffer, Coin Shield) and outfits.
+- **Beat the clock:** finish a 10, 15 or 30-minute puzzle within its time goal for **double coins**, and unlock the achievements *Lunch Break Legend*, *Skip Intro Energy* and *Binge Boss* on your profile.
 - **Chibi closet:**
   - Feminine, masculine and non-binary body styles.
   - Skin tones, eye colors, hair colors and 7 hairstyles.
