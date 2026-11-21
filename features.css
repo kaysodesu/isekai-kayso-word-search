@@ -50,6 +50,50 @@
 .discord-hint { background: color-mix(in srgb, var(--discord) 10%, var(--surface)); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
 .discord-hint code { background: var(--surface); padding: 1px 6px; border-radius: 6px; }
 
+/* Compact home: header, one-line filter bar, theme rows */
+.home-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 22px 0 12px; }
+.home-head h1 { margin: 0; font-size: clamp(1.4rem, 3.4vw, 1.9rem); letter-spacing: -.02em; line-height: 1.15; }
+.home-head p { margin: 2px 0 0; font-size: .9rem; }
+.home-actions { display: flex; align-items: center; gap: 8px; }
+.home-actions .progress-pill { font-size: .8rem; padding: 5px 10px; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px; margin-bottom: 8px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+.len-seg { display: flex; gap: 3px; background: var(--surface-2); border-radius: 10px; padding: 3px; }
+.len-pill { border: 0; background: transparent; color: var(--ink-soft); font-weight: 800; font-size: .82rem; padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+.len-pill[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: inset 0 -2px 0 var(--tc), 0 1px 3px rgba(0,0,0,.1); }
+.search.compact { flex: 1 1 160px; padding: 0 10px; border-radius: 10px; background: var(--bg); }
+.search.compact input { padding: 8px 0; font-size: .9rem; }
+.cat-select { font: inherit; font-size: .88rem; font-weight: 600; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; max-width: 100%; }
+.toolbar .toggle { font-size: .85rem; white-space: nowrap; padding-right: 4px; }
+.list-key { display: flex; justify-content: space-between; gap: 10px; font-size: .78rem; margin: 0 4px 8px; flex-wrap: wrap; }
+.list-key span { display: inline-flex; align-items: center; gap: 5px; }
+.theme-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 6px 10px; }
+.trow { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 6px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); min-width: 0; }
+.trow:hover { border-color: color-mix(in srgb, var(--brand) 45%, var(--line)); }
+.trow.complete { border-color: color-mix(in srgb, var(--gold) 60%, var(--line)); background: color-mix(in srgb, var(--gold) 6%, var(--surface)); }
+.tr-main { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; text-decoration: none; }
+.tr-emoji { font-size: 1.35rem; width: 1.8rem; text-align: center; flex: none; }
+.tr-name { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.tr-name b { font-size: .93rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tr-name small { font-size: .72rem; color: var(--ink-soft); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tr-chips { display: flex; gap: 4px; flex: none; }
+.lc { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font-size: .74rem; font-weight: 800; text-decoration: none;
+  color: var(--tc); border: 1.5px solid color-mix(in srgb, var(--tc) 55%, transparent); background: color-mix(in srgb, var(--tc) 7%, var(--surface)); transition: transform .1s; }
+.lc:hover { transform: translateY(-1px); }
+.lc.done { background: var(--tc); color: #fff; border-color: var(--tc); }
+.lc.dim { opacity: .3; }
+.lc.mini { width: 12px; height: 12px; border-radius: 4px; --tc: var(--brand); display: inline-block; }
+@media (max-width: 620px) {
+  .home-head { padding: 14px 0 8px; }
+  .toolbar { padding: 6px; gap: 6px; }
+  .len-seg { width: 100%; justify-content: space-between; }
+  .len-pill { flex: 1; padding: 7px 0; }
+  .cat-select { flex: 1 1 140px; }
+  .theme-list { grid-template-columns: 1fr; gap: 5px; }
+  .lc { width: 28px; height: 28px; font-size: .7rem; }
+  .list-key span:first-child { display: none; }
+}
+
 /* Leaderboard (this device) */
 .board-head { display: flex; gap: 16px; align-items: center; }
 .board-av .avatar { width: 90px; height: 117px; }

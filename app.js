@@ -310,59 +310,52 @@
     document.title = "Seek & Find Word Search";
     app.innerHTML = "";
     app.appendChild($("homeTpl").content.cloneNode(true));
-    $("heroArt").innerHTML = '<div class="hero-cast">' + Avatar.render(S.look) + Avatar.INKY + "</div>";
 
+    // Length pills: All · 1 · 5 · 10 · 15 · 30
     var tierRow = $("tierRow");
-    var allTiers = [{ key: "all", label: "All", name: "Every length", color: "var(--brand)", count: PUZZLES.length }]
-      .concat(TIERS.map(function (t) { return { key: t.key, label: t.minutes + " min", name: t.name, color: t.color, count: 35 }; }));
-    allTiers.forEach(function (t) {
-      var b = el("button", "tier"); b.type = "button"; b.dataset.key = t.key;
-      b.style.setProperty("--tc", t.color);
-      b.setAttribute("aria-pressed", prefs.tier === t.key);
-      b.innerHTML = '<span class="dot"></span><span class="tier-time">' + t.label + '</span><span class="tier-name">' + t.name + '</span><span class="tier-count">' + t.count + " puzzles</span>";
-      b.addEventListener("click", function () {
-        prefs.tier = t.key; store("sf_prefs", prefs);
-        tierRow.querySelectorAll(".tier").forEach(function (x) { x.setAttribute("aria-pressed", x.dataset.key === prefs.tier); });
-        drawList();
+    [{ key: "all", label: "All", color: "var(--brand)", title: "Every length" }]
+      .concat(TIERS.map(function (t) { return { key: t.key, label: t.minutes + "m", color: t.color, title: t.name + " · about " + t.minutes + " min" }; }))
+      .forEach(function (t) {
+        var b = el("button", "len-pill", t.label); b.type = "button"; b.dataset.key = t.key; b.title = t.title;
+        b.style.setProperty("--tc", t.color);
+        b.setAttribute("aria-pressed", prefs.tier === t.key);
+        b.addEventListener("click", function () {
+          prefs.tier = t.key; store("sf_prefs", prefs);
+          tierRow.querySelectorAll(".len-pill").forEach(function (x) { x.setAttribute("aria-pressed", x.dataset.key === prefs.tier); });
+          drawList();
+        });
+        tierRow.appendChild(b);
       });
-      tierRow.appendChild(b);
-    });
 
-    var chips = $("categoryChips");
-    [{ key: "all", name: "All themes", emoji: "✨" }].concat(CATEGORIES).forEach(function (c) {
-      var b = el("button", "chip", c.emoji + " " + c.name);
-      b.type = "button"; b.setAttribute("role", "tab"); b.dataset.key = c.key;
-      b.setAttribute("aria-selected", prefs.cat === c.key);
-      b.addEventListener("click", function () {
-        prefs.cat = c.key; store("sf_prefs", prefs);
-        chips.querySelectorAll(".chip").forEach(function (x) { x.setAttribute("aria-selected", x.dataset.key === c.key); });
-        drawList();
-      });
-      chips.appendChild(b);
-    });
+    var cat = $("catSelect");
+    cat.innerHTML = '<option value="all">All categories</option>' + CATEGORIES.map(function (c) { return '<option value="' + c.key + '">' + c.emoji + " " + c.name + "</option>"; }).join("");
+    cat.value = prefs.cat;
+    cat.addEventListener("change", function () { prefs.cat = cat.value; store("sf_prefs", prefs); drawList(); });
     var search = $("searchBox"), hide = $("hideDone");
     search.addEventListener("input", drawList);
     hide.checked = !!prefs.hideDone;
     hide.addEventListener("change", function () { prefs.hideDone = hide.checked; store("sf_prefs", prefs); drawList(); });
 
+    // One slim row per theme, with its five lengths as small buttons
     function drawList() {
-      var q = search.value.trim().toLowerCase(), list = $("puzzleList"), shown = 0;
-      list.innerHTML = "";
-      PUZZLES.forEach(function (p) {
-        if (prefs.tier !== "all" && p.tier.key !== prefs.tier) return;
-        if (prefs.cat !== "all" && p.theme.cat !== prefs.cat) return;
-        if (prefs.hideDone && S.done[p.id]) return;
-        if (q && (p.theme.name + " " + catOf(p.theme.cat).name + " " + p.theme.words + " " + p.tier.name).toLowerCase().indexOf(q) < 0) return;
+      var q = search.value.trim().toLowerCase(), list = $("puzzleList"), html = "", shown = 0;
+      THEMES.forEach(function (th) {
+        if (prefs.cat !== "all" && th.cat !== prefs.cat) return;
+        if (q && (th.name + " " + catOf(th.cat).name + " " + th.words).toLowerCase().indexOf(q) < 0) return;
+        var doneCount = TIERS.filter(function (t) { return S.done[th.id + "-" + t.key]; }).length;
+        if (prefs.hideDone && (prefs.tier === "all" ? doneCount === 5 : S.done[th.id + "-" + prefs.tier])) return;
         shown++;
-        var d = S.done[p.id];
-        var a = el("a", "card"); a.href = "#/play/" + encodeURIComponent(p.id);
-        a.style.setProperty("--tc", p.tier.color);
-        a.innerHTML = '<span class="c-emoji">' + p.theme.emoji + '</span><span class="c-cat">' + catOf(p.theme.cat).name + '</span><span class="c-title">' + esc(p.theme.name) + "</span>" +
-          '<span class="c-meta"><span class="tag time">~' + p.tier.minutes + ' min</span><span class="tag">' + p.tier.size + "×" + p.tier.size + '</span><span class="tag">' + p.tier.words + " words</span></span>" +
-          (d ? '<span class="done-badge" title="Best: ' + fmt(d.s) + '">' + starStr(d.stars) + "</span>" : "");
-        a.setAttribute("aria-label", p.theme.name + ", " + p.tier.minutes + " minute puzzle" + (d ? ", earned " + d.stars + " Grotto Coins" : ""));
-        list.appendChild(a);
+        // the row itself opens the chosen length, or the next unsolved one
+        var next = TIERS.filter(function (t) { return !S.done[th.id + "-" + t.key]; })[0] || TIERS[0];
+        var main = th.id + "-" + (prefs.tier !== "all" ? prefs.tier : next.key);
+        html += '<div class="trow' + (doneCount === 5 ? " complete" : "") + '">' +
+          '<a class="tr-main" title="' + esc(th.name) + '" href="#/play/' + encodeURIComponent(main) + '"><span class="tr-emoji">' + th.emoji + '</span><span class="tr-name"><b>' + esc(th.name) + "</b><small>" + catOf(th.cat).name + (doneCount ? " · " + doneCount + "/5" : "") + "</small></span></a>" +
+          '<span class="tr-chips">' + TIERS.map(function (t) {
+            var id = th.id + "-" + t.key, d = S.done[id], dim = prefs.tier !== "all" && prefs.tier !== t.key;
+            return '<a class="lc' + (d ? " done" : "") + (dim ? " dim" : "") + '" style="--tc:' + t.color + '" href="#/play/' + encodeURIComponent(id) + '" title="' + esc(th.name) + " · " + t.minutes + " min" + (d ? " · best " + fmt(d.s) + " · " + d.stars + " coins" : "") + '" aria-label="' + esc(th.name) + ", " + t.minutes + " minute puzzle" + (d ? ", solved" : "") + '">' + t.minutes + "</a>";
+          }).join("") + "</span></div>";
       });
+      list.innerHTML = html;
       $("emptyMsg").hidden = shown > 0;
     }
     drawList();

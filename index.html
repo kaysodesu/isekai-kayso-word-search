@@ -37,33 +37,30 @@
 
   <!-- Home view -->
   <template id="homeTpl">
-    <section class="hero">
-      <div class="hero-text">
-        <h1>Word searches for your coffee break, your commute, and your 2 a.m. can't-sleep.</h1>
-        <p>175 puzzles, from 90s throwbacks to anime deep cuts. Follow an anime-style story, earn Grotto Coins, and dress up your chibi.</p>
-        <div class="hero-actions">
-          <a class="btn" href="#/journey">📖 Continue the story</a>
-          <span class="progress-pill" id="progressPill">0 / 175 solved</span>
-        </div>
+    <section class="home-head">
+      <div>
+        <h1>Pick a puzzle</h1>
+        <p class="muted">175 word searches · 35 themes · 5 lengths</p>
       </div>
-      <div class="hero-art" id="heroArt" aria-hidden="true"></div>
+      <div class="home-actions">
+        <span class="progress-pill" id="progressPill">0 / 175 solved</span>
+        <a class="btn small" href="#/journey">📖 Story</a>
+      </div>
     </section>
 
-    <section class="tiers" aria-label="Choose puzzle length" id="tierRow"></section>
-
-    <section class="filters">
-      <label class="search">
-        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M10 4a6 6 0 1 0 3.87 10.59l4.27 4.27 1.41-1.41-4.27-4.27A6 6 0 0 0 10 4Zm0 2a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z"/></svg>
-        <input type="search" id="searchBox" placeholder="Search themes (e.g. ocean, pizza, space)" autocomplete="off">
+    <section class="toolbar" aria-label="Filters">
+      <div class="len-seg" id="tierRow" role="group" aria-label="Puzzle length"></div>
+      <label class="search compact">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M10 4a6 6 0 1 0 3.87 10.59l4.27 4.27 1.41-1.41-4.27-4.27A6 6 0 0 0 10 4Zm0 2a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z"/></svg>
+        <input type="search" id="searchBox" placeholder="Search themes" autocomplete="off" aria-label="Search themes">
       </label>
-      <div class="chips" id="categoryChips" role="tablist" aria-label="Categories"></div>
-      <label class="toggle">
-        <input type="checkbox" id="hideDone"> <span>Hide completed</span>
-      </label>
+      <select id="catSelect" class="cat-select" aria-label="Category"></select>
+      <label class="toggle"><input type="checkbox" id="hideDone"> <span>Hide done</span></label>
     </section>
 
-    <section class="grid-list" id="puzzleList" aria-live="polite"></section>
-    <p class="empty" id="emptyMsg" hidden>No puzzles match. Try a different search or category.</p>
+    <p class="list-key muted"><span>Tap a number to play: minutes per puzzle.</span><span><i class="lc mini done"></i> solved</span></p>
+    <section class="theme-list" id="puzzleList" aria-live="polite"></section>
+    <p class="empty" id="emptyMsg" hidden>No themes match. Try another search or category.</p>
   </template>
 
   <!-- Puzzle view -->
