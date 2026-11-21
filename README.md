@@ -25,6 +25,10 @@ Everything is saved **only in your own browser**, on your device. There are no a
 
 To keep your progress safe or move it to another device, use **Leaderboard → Download backup**, then **Restore backup** on the other device. Clearing your browser's site data erases your progress.
 
+## Dev journal
+
+- [Nov 21, 2026: The "Level Up" update](docs/journal/2026-11-21-level-up-update.md). A compact puzzle page, lengths that unlock in order, rebalanced time goals, double coins and achievements, a funnier story, and our first research run.
+
 ## Research
 
 - [Case study: "Edwin", a simulated usability run](docs/case-study/README.md). A practice research run with a fictional persona that tests the game against its cozy, chill, self-paced and story-driven goals, and reviews published evidence on puzzles, well-being and recovery.
