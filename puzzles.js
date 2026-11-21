@@ -5,9 +5,9 @@
 
 window.TIERS = [
   { key: "1",  minutes: 1,  name: "Speedrun",    size: 8,  words: 6,  dirs: ["E", "S"],                               color: "var(--t1)",  fill: "uniform" },
-  { key: "5",  minutes: 5,  name: "Coffee Break",  size: 11, words: 12, dirs: ["E", "S", "SE", "NE"],                   color: "var(--t5)",  fill: "uniform" },
-  { key: "10", minutes: 10, name: "Lunch Break", size: 13, words: 18, dirs: ["E", "S", "SE", "NE", "W", "N"],         color: "var(--t10)", fill: "mixed" },
-  { key: "15", minutes: 15, name: "One Episode",     size: 15, words: 26, dirs: ["E", "S", "SE", "NE", "W", "N", "NW", "SW"], color: "var(--t15)", fill: "mixed" },
+  { key: "5",  minutes: 5,  name: "Coffee Break",  size: 12, words: 16, dirs: ["E", "S", "SE", "NE"],                   color: "var(--t5)",  fill: "uniform" },
+  { key: "10", minutes: 10, name: "Lunch Break", size: 15, words: 22, dirs: ["E", "S", "SE", "NE", "W", "N"],         color: "var(--t10)", fill: "mixed" },
+  { key: "15", minutes: 15, name: "One Episode",     size: 16, words: 30, dirs: ["E", "S", "SE", "NE", "W", "N", "NW", "SW"], color: "var(--t15)", fill: "mixed" },
   { key: "30", minutes: 30, name: "Binge Mode",      size: 20, words: 40, dirs: ["E", "S", "SE", "NE", "W", "N", "NW", "SW"], color: "var(--t30)", fill: "tricky" }
 ];
 
