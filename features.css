@@ -83,6 +83,12 @@
 .lc.done { background: var(--tc); color: #fff; border-color: var(--tc); }
 .lc.dim { opacity: .3; }
 .lc.mini { width: 12px; height: 12px; border-radius: 4px; --tc: var(--brand); display: inline-block; }
+/* locked lengths: grey, dashed, small padlock badge */
+.lc.locked, .pips .locked { position: relative; color: var(--ink-soft); border: 1.5px dashed var(--line); background: var(--surface-2); cursor: not-allowed; }
+.lc.locked:hover { transform: none; }
+.lc.locked::after, .pips .locked::after { content: "🔒"; position: absolute; right: -5px; top: -6px; font-size: .58rem; line-height: 1; }
+.lc.mini.locked { margin-left: 6px; }
+.lc.mini.locked::after { content: none; }
 @media (max-width: 620px) {
   .home-head { padding: 14px 0 8px; }
   .toolbar { padding: 6px; gap: 6px; }

@@ -61,6 +61,18 @@
   S = normalize(S);
   var prefs = load("sf_prefs", { tier: "all", cat: "all", hideDone: false });
 
+  // Lengths unlock in order inside each theme: 1 → 5 → 10 → 15 → 30 minutes.
+  // A length is open if it's the first one, the one before it is solved, or it's already solved.
+  function unlocked(theme, i) {
+    return i === 0 || !!S.done[theme.id + "-" + TIERS[i].key] || !!S.done[theme.id + "-" + TIERS[i - 1].key];
+  }
+  function lockedHint(i) { return "Locked: solve the " + TIERS[i - 1].minutes + "-minute puzzle first"; }
+  // The next unsolved length (always unlocked), or the first length once the theme is finished
+  function firstOpen(theme) {
+    for (var i = 0; i < TIERS.length; i++) if (!S.done[theme.id + "-" + TIERS[i].key]) return TIERS[i];
+    return TIERS[0];
+  }
+
   var VALID = {}; PUZZLES.forEach(function (p) { VALID[p.id] = true; });
   // only count puzzles that still exist (themes were swapped in v2)
   function earnedStars() { var t = 0; Object.keys(S.done).forEach(function (k) { if (VALID[k]) t += S.done[k].stars || 0; }); return t; }
@@ -291,7 +303,18 @@
     var h = location.hash || "#/";
     h = h.split("?")[0];
     var m = h.match(/^#\/play\/(.+)$/), view = "home";
-    if (m && puzzleById(decodeURIComponent(m[1]))) { view = "play"; renderPlay(puzzleById(decodeURIComponent(m[1]))); }
+    var p = m && puzzleById(decodeURIComponent(m[1]));
+    if (p) {
+      // guard direct links and bookmarks to locked lengths
+      var ti = TIERS.indexOf(p.tier);
+      if (!unlocked(p.theme, ti)) {
+        var open = firstOpen(p.theme);
+        toast("🔒 " + p.tier.minutes + " min is locked. Your next " + p.theme.name + " puzzle is the " + open.minutes + "-minute one.");
+        location.replace("#/play/" + encodeURIComponent(p.theme.id + "-" + open.key));
+        return;
+      }
+      view = "play"; renderPlay(p);
+    }
     else if (h === "#/journey") { view = "journey"; renderJourney(); }
     else if (h === "#/closet") { view = "closet"; renderCloset(); }
     else if (h === "#/shop") { view = "shop"; renderShop(); }
@@ -339,20 +362,23 @@
     // One slim row per theme, with its five lengths as small buttons
     function drawList() {
       var q = search.value.trim().toLowerCase(), list = $("puzzleList"), html = "", shown = 0;
+      var fi = TIERS.findIndex(function (t) { return t.key === prefs.tier; }); // -1 when "All"
       THEMES.forEach(function (th) {
         if (prefs.cat !== "all" && th.cat !== prefs.cat) return;
         if (q && (th.name + " " + catOf(th.cat).name + " " + th.words).toLowerCase().indexOf(q) < 0) return;
         var doneCount = TIERS.filter(function (t) { return S.done[th.id + "-" + t.key]; }).length;
         if (prefs.hideDone && (prefs.tier === "all" ? doneCount === 5 : S.done[th.id + "-" + prefs.tier])) return;
         shown++;
-        // the row itself opens the chosen length, or the next unsolved one
-        var next = TIERS.filter(function (t) { return !S.done[th.id + "-" + t.key]; })[0] || TIERS[0];
-        var main = th.id + "-" + (prefs.tier !== "all" ? prefs.tier : next.key);
+        // the row opens the chosen length if it's unlocked, otherwise the next one the player can play
+        var pick = fi >= 0 && unlocked(th, fi) ? prefs.tier : firstOpen(th).key;
         html += '<div class="trow' + (doneCount === 5 ? " complete" : "") + '">' +
-          '<a class="tr-main" title="' + esc(th.name) + '" href="#/play/' + encodeURIComponent(main) + '"><span class="tr-emoji">' + th.emoji + '</span><span class="tr-name"><b>' + esc(th.name) + "</b><small>" + catOf(th.cat).name + (doneCount ? " · " + doneCount + "/5" : "") + "</small></span></a>" +
-          '<span class="tr-chips">' + TIERS.map(function (t) {
-            var id = th.id + "-" + t.key, d = S.done[id], dim = prefs.tier !== "all" && prefs.tier !== t.key;
-            return '<a class="lc' + (d ? " done" : "") + (dim ? " dim" : "") + '" style="--tc:' + t.color + '" href="#/play/' + encodeURIComponent(id) + '" title="' + esc(th.name) + " · " + t.minutes + " min" + (d ? " · best " + fmt(d.s) + " · " + d.stars + " coins" : "") + '" aria-label="' + esc(th.name) + ", " + t.minutes + " minute puzzle" + (d ? ", solved" : "") + '">' + t.minutes + "</a>";
+          '<a class="tr-main" title="' + esc(th.name) + '" href="#/play/' + encodeURIComponent(th.id + "-" + pick) + '"><span class="tr-emoji">' + th.emoji + '</span><span class="tr-name"><b>' + esc(th.name) + "</b><small>" + catOf(th.cat).name + (doneCount ? " · " + doneCount + "/5" : "") + "</small></span></a>" +
+          '<span class="tr-chips">' + TIERS.map(function (t, i) {
+            var id = th.id + "-" + t.key, d = S.done[id], dim = prefs.tier !== "all" && prefs.tier !== t.key ? " dim" : "";
+            if (!unlocked(th, i)) {
+              return '<span class="lc locked' + dim + '" style="--tc:' + t.color + '" title="' + lockedHint(i) + '" aria-label="' + esc(th.name) + ", " + t.minutes + ' minute puzzle, locked">' + t.minutes + "</span>";
+            }
+            return '<a class="lc' + (d ? " done" : "") + dim + '" style="--tc:' + t.color + '" href="#/play/' + encodeURIComponent(id) + '" title="' + esc(th.name) + " · " + t.minutes + " min" + (d ? " · best " + fmt(d.s) + " · " + d.stars + " coins" : "") + '" aria-label="' + esc(th.name) + ", " + t.minutes + " minute puzzle" + (d ? ", solved" : "") + '">' + t.minutes + "</a>";
           }).join("") + "</span></div>";
       });
       list.innerHTML = html;
@@ -662,11 +688,14 @@
       h += '<section class="chapter"><h2><span class="ch-num">Arc ' + (ci + 1) + "</span> " + cat.emoji + " " + STORY.realms[cat.key] + "</h2><div class=\"stops\">";
       THEMES.filter(function (t) { return t.cat === cat.key; }).forEach(function (t) {
         var complete = themeDone(t), lines = TIERS.filter(function (tr) { return S.done[t.id + "-" + tr.key]; }).length;
-        var next = null; for (var i = 0; i < TIERS.length; i++) if (!S.done[t.id + "-" + TIERS[i].key]) { next = t.id + "-" + TIERS[i].key; break; }
         h += '<article class="stop' + (complete ? " complete" : "") + '">' +
           '<div class="stop-top"><span class="stop-emoji">' + t.emoji + '</span><div><h3>' + esc(t.name) + '</h3><span class="muted">' + themeStars(t) + "/25 " + COIN + "</span></div>" + (complete ? '<span class="seal" title="Story complete">📜✓</span>' : "") + "</div>" +
-          '<div class="pips">' + TIERS.map(function (tr) { var d = S.done[t.id + "-" + tr.key]; return '<a href="#/play/' + t.id + "-" + tr.key + '" class="' + (d ? "on" : "") + '" title="' + tr.minutes + " min" + (d ? ", " + d.stars + " coins" : "") + '">' + tr.minutes + "</a>"; }).join("") + "</div>" +
-          '<div class="stop-actions"><a class="btn small" href="#/play/' + (next || t.id + "-1") + '">' + (complete ? "Replay" : lines ? "Continue" : "Start") + '</a><button class="btn ghost small" data-story="' + t.id + '">📖 Story</button></div></article>';
+          '<div class="pips">' + TIERS.map(function (tr, i) {
+            var d = S.done[t.id + "-" + tr.key];
+            if (!unlocked(t, i)) return '<span class="locked" title="' + lockedHint(i) + '">' + tr.minutes + "</span>";
+            return '<a href="#/play/' + t.id + "-" + tr.key + '" class="' + (d ? "on" : "") + '" title="' + tr.minutes + " min" + (d ? ", " + d.stars + " coins" : "") + '">' + tr.minutes + "</a>";
+          }).join("") + "</div>" +
+          '<div class="stop-actions"><a class="btn small" href="#/play/' + t.id + "-" + firstOpen(t).key + '">' + (complete ? "Replay" : lines ? "Continue" : "Start") + '</a><button class="btn ghost small" data-story="' + t.id + '">📖 Story</button></div></article>';
       });
       h += "</div></section>";
     });
