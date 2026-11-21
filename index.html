@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="175 free word search puzzles by Isekai Kayso Studio: an anime-style storybook adventure, Grotto Coins, power-ups and a dress-up chibi avatar. Plays great on PC, tablet and phone.">
+  <meta name="theme-color" content="#1f6f5c">
+  <title>Seek &amp; Find Word Search</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231f6f5c'/><text x='50' y='68' font-size='58' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>S</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="features.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="#/" class="brand" aria-label="Seek and Find home">
+      <span class="logo" aria-hidden="true">S</span>
+      <span class="brand-text">Seek <em>&amp;</em> Find</span>
+    </a>
+    <nav class="mainnav" id="mainNav" aria-label="Main">
+      <a href="#/" data-nav="home"><span aria-hidden="true">🔎</span><span>Puzzles</span></a>
+      <a href="#/journey" data-nav="journey"><span aria-hidden="true">📖</span><span>Journey</span></a>
+      <a href="#/closet" data-nav="closet"><span aria-hidden="true">👕</span><span>Closet</span></a>
+      <a href="#/shop" data-nav="shop"><span aria-hidden="true">✨</span><span>Shop</span></a>
+      <a href="#/leaderboard" data-nav="leaderboard"><span aria-hidden="true">🏆</span><span>Leaderboard</span></a>
+    </nav>
+    <div class="topnav">
+      <a href="#/shop" class="star-pill" id="starPill" title="Grotto Coins to spend" aria-label="Grotto Coins"><svg class="gc" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="#f5b301" stroke="#b97f00" stroke-width="2"/><circle cx="12" cy="12" r="6.8" fill="none" stroke="#ffe08a" stroke-width="1.4"/><text x="12" y="16.2" text-anchor="middle" font-size="11" font-weight="900" font-family="Arial,sans-serif" fill="#8a5a00">G</text></svg> <b id="starCount">0</b></a>
+      <a href="#/closet" class="mini-av" id="miniAvatar" aria-label="Your avatar"></a>
+      <button class="icon-btn text-btn" id="textToggle" aria-label="Change text size" title="Text size">Aa</button>
+      <button class="icon-btn" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 0 1-4.4 2.26 5.4 5.4 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1Z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="app"></main>
+
+  <!-- Home view -->
+  <template id="homeTpl">
+    <section class="hero">
+      <div class="hero-text">
+        <h1>Word searches for your coffee break, your commute, and your 2 a.m. can't-sleep.</h1>
+        <p>175 puzzles, from 90s throwbacks to anime deep cuts. Follow an anime-style story, earn Grotto Coins, and dress up your chibi.</p>
+        <div class="hero-actions">
+          <a class="btn" href="#/journey">📖 Continue the story</a>
+          <span class="progress-pill" id="progressPill">0 / 175 solved</span>
+        </div>
+      </div>
+      <div class="hero-art" id="heroArt" aria-hidden="true"></div>
+    </section>
+
+    <section class="tiers" aria-label="Choose puzzle length" id="tierRow"></section>
+
+    <section class="filters">
+      <label class="search">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M10 4a6 6 0 1 0 3.87 10.59l4.27 4.27 1.41-1.41-4.27-4.27A6 6 0 0 0 10 4Zm0 2a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z"/></svg>
+        <input type="search" id="searchBox" placeholder="Search themes (e.g. ocean, pizza, space)" autocomplete="off">
+      </label>
+      <div class="chips" id="categoryChips" role="tablist" aria-label="Categories"></div>
+      <label class="toggle">
+        <input type="checkbox" id="hideDone"> <span>Hide completed</span>
+      </label>
+    </section>
+
+    <section class="grid-list" id="puzzleList" aria-live="polite"></section>
+    <p class="empty" id="emptyMsg" hidden>No puzzles match. Try a different search or category.</p>
+  </template>
+
+  <!-- Puzzle view -->
+  <template id="playTpl">
+    <section class="play">
+      <div class="play-head">
+        <a href="#/" class="back-link">&larr; Puzzles</a>
+        <div class="play-title">
+          <span class="play-cat" id="pCat"></span>
+          <h1 id="pTitle"></h1>
+          <span class="play-meta" id="pMeta"></span>
+        </div>
+        <div class="stats">
+          <div class="stat"><span class="stat-label">Time</span><span class="stat-val" id="timer">0:00</span></div>
+          <div class="stat"><span class="stat-label">Found</span><span class="stat-val" id="foundCount">0/0</span></div>
+          <div class="stat stat-stars"><span class="stat-label">Rating</span><span class="stat-val stars-live" id="liveStars"></span></div>
+        </div>
+      </div>
+
+      <div class="board-wrap">
+        <div class="board-col">
+          <div class="board" id="board" role="grid" aria-label="Letter grid"></div>
+          <p class="hint-text" id="statusLine">Drag across letters, or tap the first and last letter of a word.</p>
+        </div>
+        <aside class="words-col">
+          <div class="powerbar" id="powerBar" aria-label="Power-ups and buffers"></div>
+          <div class="words-head">
+            <h2>Words to find</h2>
+            <div class="tools">
+              <button class="btn ghost small" id="hintBtn" title="Flash a first letter. Costs 1 Grotto Coin from this puzzle's rating.">Hint −1 <svg class="gc" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="#f5b301" stroke="#b97f00" stroke-width="2"/><circle cx="12" cy="12" r="6.8" fill="none" stroke="#ffe08a" stroke-width="1.4"/><text x="12" y="16.2" text-anchor="middle" font-size="11" font-weight="900" font-family="Arial,sans-serif" fill="#8a5a00">G</text></svg></button>
+              <button class="btn ghost small" id="pauseBtn">Pause</button>
+              <button class="btn ghost small" id="restartBtn">Restart</button>
+              <button class="btn ghost small danger" id="revealBtn">Give up</button>
+            </div>
+          </div>
+          <ul class="word-list" id="wordList"></ul>
+        </aside>
+      </div>
+
+      <div class="pause-cover" id="pauseCover" hidden>
+        <div>
+          <p>Paused</p>
+          <button class="btn" id="resumeBtn">Resume</button>
+        </div>
+      </div>
+    </section>
+  </template>
+
+  <!-- Results / story modal -->
+  <div class="modal" id="winModal" hidden role="dialog" aria-modal="true" aria-labelledby="winTitle">
+    <div class="modal-card">
+      <div class="confetti" aria-hidden="true"></div>
+      <h2 id="winTitle">Puzzle complete!</h2>
+      <div class="win-stars" id="winStars" aria-live="polite"></div>
+      <p id="winText"></p>
+      <div id="winExtra"></div>
+      <div class="modal-actions" id="winActions"></div>
+    </div>
+  </div>
+
+  <!-- Comic overlay -->
+  <div class="comic" id="comic" hidden role="dialog" aria-modal="true" aria-label="Story">
+    <div class="comic-card">
+      <div class="comic-head"><span id="comicTitle"></span><button class="link-btn" id="comicSkip">Skip</button></div>
+      <div class="comic-stage" id="comicStage"></div>
+      <div class="comic-foot">
+        <div class="comic-dots" id="comicDots"></div>
+        <button class="btn" id="comicNext">Next ›</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <footer class="foot">
+    <p>Your progress saves only on this device. Nothing is sent anywhere. · <a href="https://discord.gg/EAHfPzxqEc" target="_blank" rel="noopener noreferrer">Isekai Kayso Studio on Discord</a></p>
+  </footer>
+
+  <script src="puzzles.js"></script>
+  <script src="avatar.js"></script>
+  <script src="story.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
